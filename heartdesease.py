@@ -179,10 +179,28 @@ def run_streamlit_app():
     # ---------------------------
     st.header("Patient Information")
 
+    # List of common symptoms for selection
+    symptom_options = [
+        "Chest pain",
+        "Shortness of breath",
+        "Dizziness",
+        "Palpitations",
+        "Fatigue",
+        "Syncope",
+        "Nausea",
+        "Sweating",
+        "Arm/neck/jaw pain",
+    ]
+
+    # Build rules early so we can show the static graph before submission
+    rules_for_graph = heart_disease_rules()
+
     with st.form("heart_form"):
         st.subheader("Symptoms")
-        core_symptoms = st.checkbox("Core symptoms cluster present?")
-        symptom_count = st.slider("Number of additional symptoms", 0, 10, 0)
+        selected_symptoms = st.multiselect("Select present symptoms", symptom_options)
+        # Core symptoms cluster: require both Chest pain and Shortness of breath
+        core_symptoms = 1 if {"Chest pain", "Shortness of breath"}.issubset(set(selected_symptoms)) else 0
+        symptom_count = len(selected_symptoms)
 
         st.subheader("Risk Factors")
         risk_count = st.slider("Number of risk factors", 0, 10, 0)
@@ -198,6 +216,42 @@ def run_streamlit_app():
         contra = st.checkbox("Contraindication to first-line therapy?")
 
         submitted = st.form_submit_button("Run Diagnosis")
+
+    # ---------------------------
+    # Knowledge Graph Visualization
+    # ---------------------------
+    def build_graph_dot(rules, fired_rules=None):
+        fired_rules = fired_rules or []
+        dot_lines = ["digraph G {", "rankdir=LR;", 'node [shape=box, style="rounded,filled", fillcolor="#ffffff"];']
+
+        # Create fact nodes (collect unique fact keys)
+        fact_keys = set()
+        for r in rules:
+            for c in r.conditions:
+                fact_keys.add(c[0])
+            fact_keys.add(r.conclusion[0])
+
+        for fk in sorted(fact_keys):
+            dot_lines.append(f'"{fk}" [shape=oval, fillcolor="#ffffe0"];')
+
+        # Add rule nodes and edges
+        for i, r in enumerate(rules):
+            rn = f"rule_{i}"
+            label = r.identifier.replace('"', "')")
+            color = "#b3e6b3" if r.identifier in fired_rules else "#e6f0ff"
+            dot_lines.append(f'"{rn}" [label="{label}", shape=box, style="filled", fillcolor="{color}"];')
+            for cond in r.conditions:
+                fk = cond[0]
+                dot_lines.append(f'"{fk}" -> "{rn}";')
+            concl = r.conclusion[0]
+            dot_lines.append(f'"{rn}" -> "{concl}";')
+
+        dot_lines.append("}")
+        return "\n".join(dot_lines)
+
+    st.subheader("Knowledge Graph")
+    st.info("Rules and fact-flow for the forward-chaining engine. After running diagnosis, fired rules will be highlighted.")
+    st.graphviz_chart(build_graph_dot(rules_for_graph))
 
     # ---------------------------
     # Run Forward Chaining
@@ -232,22 +286,12 @@ def run_streamlit_app():
         else:
             st.write("No rules fired.")
 
-
-def main():
-    # Detect whether we're running under the Streamlit runner. If not, print instructions
-    try:
-        from streamlit.runtime.scriptrunner.script_run_context import get_script_run_ctx
-        ctx = get_script_run_ctx()
-        if ctx is None:
-            print("This is a Streamlit app. Run it with:\n\n  streamlit run c:/Users/PC/Desktop/Aiproject/heartdesease.py\n")
-            return
-    except Exception:
-        print("This is a Streamlit app. Run it with:\n\n  streamlit run c:/Users/PC/Desktop/Aiproject/heartdesease.py\n")
-        return
-
-    # If we reach here, we are running under Streamlit's script runner
-    run_streamlit_app()
+        # Re-render graph with fired rules highlighted
+        st.subheader("Forward Chaining Trace")
+        st.graphviz_chart(build_graph_dot(rules, fired_rules))
 
 
-if __name__ == "__main__":
-    main()
+import streamlit as st
+
+# Run the Streamlit app (Streamlit runs this script as __main__)
+run_streamlit_app()
