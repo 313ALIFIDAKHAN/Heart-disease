@@ -1,0 +1,86 @@
+{
+    "diseases": [
+        {
+            "name": "Common Cold",
+            "symptoms": [
+                "runny nose",
+                "sore throat",
+                "cough",
+                "sneezing",
+                "fatigue"
+            ],
+            "treatment": [
+                "Rest",
+                "Fluids",
+                "Over-the-counter cold medication"
+            ],
+            "explanation": "A viral infection of the nose and throat."
+        },
+        {
+            "name": "Influenza (Flu)",
+            "symptoms": [
+                "fever",
+                "body aches",
+                "headache",
+                "cough",
+                "fatigue",
+                "sore throat"
+            ],
+            "treatment": [
+                "Rest",
+                "Fluids",
+                "Antiviral medication (if severe)",
+                "Pain relievers"
+            ],
+            "explanation": "A common viral infection that can be deadly, especially in high-risk groups."
+        },
+        {
+            "name": "Allergies",
+            "symptoms": [
+                "sneezing",
+                "itchy eyes",
+                "runny nose",
+                "nasal congestion"
+            ],
+            "treatment": [
+                "Antihistamines",
+                "Nasal sprays",
+                "Avoidance of allergens"
+            ],
+            "explanation": "An immune system response to foreign substances that are not typically harmful to your body."
+        },
+        {
+            "name": "Strep Throat",
+            "symptoms": [
+                "sore throat",
+                "difficulty swallowing",
+                "fever",
+                "headache",
+                "nausea",
+                "vomiting"
+            ],
+            "treatment": [
+                "Antibiotics",
+                "Pain relievers",
+                "Rest"
+            ],
+            "explanation": "A bacterial infection that can make your throat feel sore and scratchy."
+        },
+        {
+            "name": "Bronchitis",
+            "symptoms": [
+                "cough",
+                "shortness of breath",
+                "chest discomfort",
+                "fatigue"
+            ],
+            "treatment": [
+                "Rest",
+                "Fluids",
+                "Cough suppressants",
+                "Bronchodilators"
+            ],
+            "explanation": "Inflammation of the lining of your bronchial tubes, which carry air to and from your lungs."
+        }
+    ]
+}
