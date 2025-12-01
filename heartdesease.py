@@ -1,4 +1,4 @@
-# Complete Knowledge Base and Inference Rules for Heart Disease Diagnosis
+"""Heart Disease forward-chaining rule engine and Streamlit UI."""
 
 from dataclasses import dataclass
 from typing import List, Dict, Tuple, Any
@@ -298,7 +298,5 @@ def run_streamlit_app():
         st.graphviz_chart(build_graph_dot(rules, fired_rules))
 
 
-import streamlit as st
-
-# Run the Streamlit app (Streamlit runs this script as __main__)
-run_streamlit_app()
+if __name__ == "__main__":
+    run_streamlit_app()
