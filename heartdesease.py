@@ -22,13 +22,19 @@ def check_condition(condition: Tuple[str, str, Any], facts: Dict[str, Any]) -> b
         return False
     current_value = facts[key]
 
-    if operator == "==": return current_value == value
-    if operator == "!=": return current_value != value
-    if operator == ">=": return current_value >= value
-    if operator == "<=": return current_value <= value
-    if operator == ">":  return current_value > value
-    if operator == "<":  return current_value < value
-    return False
+    ops = {
+        "==": lambda a, b: a == b,
+        "!=": lambda a, b: a != b,
+        ">=": lambda a, b: a >= b,
+        "<=": lambda a, b: a <= b,
+        ">":  lambda a, b: a > b,
+        "<":  lambda a, b: a < b,
+    }
+
+    fn = ops.get(operator)
+    if fn is None:
+        return False
+    return fn(current_value, value)
 
 # ---------------------------
 # Forward Chaining Engine
@@ -165,6 +171,37 @@ def heart_disease_rules() -> List[InferenceRule]:
         ),
     ]
     return rules
+# Precompute rules once to avoid rebuilding on every UI render
+RULES: List[InferenceRule] = heart_disease_rules()
+
+
+def build_graph_dot(rules: List[InferenceRule], fired_rules: List[str] | None = None) -> str:
+    fired_rules = fired_rules or []
+    lines = ["digraph G {", "rankdir=LR;", 'node [shape=box, style="rounded,filled", fillcolor="#ffffff"];']
+
+    # Collect unique fact keys
+    fact_keys = set()
+    for r in rules:
+        for c in r.conditions:
+            fact_keys.add(c[0])
+        fact_keys.add(r.conclusion[0])
+
+    for fk in sorted(fact_keys):
+        lines.append(f'"{fk}" [shape=oval, fillcolor="#ffffe0"];')
+
+    for i, r in enumerate(rules):
+        rn = f"rule_{i}"
+        label = r.identifier.replace('"', "\\\"")
+        color = "#b3e6b3" if r.identifier in fired_rules else "#e6f0ff"
+        lines.append(f'"{rn}" [label="{label}", shape=box, style="filled", fillcolor="{color}"];')
+        for cond in r.conditions:
+            fk = cond[0]
+            lines.append(f'"{fk}" -> "{rn}";')
+        concl = r.conclusion[0]
+        lines.append(f'"{rn}" -> "{concl}";')
+
+    lines.append("}")
+    return "\n".join(lines)
 # ---------------------------
 # Streamlit app entrypoint (only executed when run via `streamlit run`)
 # ---------------------------
@@ -192,8 +229,8 @@ def run_streamlit_app():
         "Arm/neck/jaw pain",
     ]
 
-    # Build rules early so we can show the static graph before submission
-    rules_for_graph = heart_disease_rules()
+    # Use precomputed rules for graph and execution
+    rules_for_graph = RULES
 
     with st.form("heart_form"):
         st.subheader("Symptoms")
@@ -217,37 +254,7 @@ def run_streamlit_app():
 
         submitted = st.form_submit_button("Run Diagnosis")
 
-    # ---------------------------
-    # Knowledge Graph Visualization
-    # ---------------------------
-    def build_graph_dot(rules, fired_rules=None):
-        fired_rules = fired_rules or []
-        dot_lines = ["digraph G {", "rankdir=LR;", 'node [shape=box, style="rounded,filled", fillcolor="#ffffff"];']
-
-        # Create fact nodes (collect unique fact keys)
-        fact_keys = set()
-        for r in rules:
-            for c in r.conditions:
-                fact_keys.add(c[0])
-            fact_keys.add(r.conclusion[0])
-
-        for fk in sorted(fact_keys):
-            dot_lines.append(f'"{fk}" [shape=oval, fillcolor="#ffffe0"];')
-
-        # Add rule nodes and edges
-        for i, r in enumerate(rules):
-            rn = f"rule_{i}"
-            label = r.identifier.replace('"', "')")
-            color = "#b3e6b3" if r.identifier in fired_rules else "#e6f0ff"
-            dot_lines.append(f'"{rn}" [label="{label}", shape=box, style="filled", fillcolor="{color}"];')
-            for cond in r.conditions:
-                fk = cond[0]
-                dot_lines.append(f'"{fk}" -> "{rn}";')
-            concl = r.conclusion[0]
-            dot_lines.append(f'"{rn}" -> "{concl}";')
-
-        dot_lines.append("}")
-        return "\n".join(dot_lines)
+    # Knowledge Graph Visualization uses module-level `build_graph_dot` for efficiency
 
     st.subheader("Knowledge Graph")
     st.info("Rules and fact-flow for the forward-chaining engine. After running diagnosis, fired rules will be highlighted.")
@@ -271,7 +278,7 @@ def run_streamlit_app():
         }
 
         # Load rules and run engine
-        rules = heart_disease_rules()
+        rules = RULES
         engine = HeartDiseaseEngine(rules)
         final_facts, fired_rules = engine.run(facts)
 
